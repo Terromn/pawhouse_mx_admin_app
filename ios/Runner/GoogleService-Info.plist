@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyBHqx7nMUw3MnsE5KzsmQranvS1Uuw_qNY</string>
+	<key>GCM_SENDER_ID</key>
+	<string>293991555</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.pawhouseAdminAlphaApp</string>
+	<key>PROJECT_ID</key>
+	<string>pawhouse-hotel</string>
+	<key>STORAGE_BUCKET</key>
+	<string>pawhouse-hotel.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:293991555:ios:743385eac5f154d3d997b6</string>
+</dict>
+</plist>

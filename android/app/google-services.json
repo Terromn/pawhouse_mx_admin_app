@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "293991555",
+    "project_id": "pawhouse-hotel",
+    "storage_bucket": "pawhouse-hotel.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:293991555:android:ecd6f145c471621ed997b6",
+        "android_client_info": {
+          "package_name": "com.pawappalpha.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "293991555-tvn9f70n7h1jhekteb3ss6k97ean7n2a.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB37AhYxslIEv_VQtdNCkL7tIWP8uj4C-I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "293991555-tvn9f70n7h1jhekteb3ss6k97ean7n2a.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
