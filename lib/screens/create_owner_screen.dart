@@ -1,6 +1,12 @@
+// ignore_for_file: use_build_context_synchronously
+
+import 'dart:io';
+
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:pawhouse_admin_alpha_app/assets/app_color_palette.dart';
 import 'package:pawhouse_admin_alpha_app/assets/app_theme.dart';
@@ -23,95 +29,107 @@ class CreateOwnerProfileScreen extends StatefulWidget {
 class _CreateOwnerProfileScreenState extends State<CreateOwnerProfileScreen> {
   String selectGender = 'Hombre'; // Default is 'Hombre'
   List<String> genderDropdownMenu = ['Hombre', 'Mujer'];
+  File? _selectedImage; // File for the selected image
+  final ImagePicker _picker = ImagePicker(); // ImagePicker instance
 
   final TextEditingController nameController = TextEditingController();
   final TextEditingController lastNameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
-  final TextEditingController secondaryPhoneController =
-      TextEditingController();
+  final TextEditingController secondaryPhoneController = TextEditingController();
   final TextEditingController homeAddressController = TextEditingController();
 
   DateTime selectedBirthDate = DateTime.now();
 
-  Future<void> _selectBirthDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: selectedBirthDate,
-      firstDate: DateTime(1950),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null && picked != selectedBirthDate) {
+  Future<void> pickImage() async {
+    final XFile? pickedImage = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedImage != null) {
       setState(() {
-        selectedBirthDate = picked;
+        _selectedImage = File(pickedImage.path);
       });
     }
   }
 
-  Future<void> uploadOwnerProfileData() async {
-    // Create a document reference
-    DocumentReference docRef =
-        FirebaseFirestore.instance.collection('users_profiles').doc();
+  Future<String> uploadImageToFirebase(File image, String documentId) async {
+    // Use the Firestore document ID as the name of the image file
+    final storageRef = FirebaseStorage.instance
+        .ref()
+        .child('owner_profile_pictures/$documentId.jpg');
 
-    // Data to upload
+    final uploadTask = storageRef.putFile(image);
+    final snapshot = await uploadTask.whenComplete(() => {});
+    return await snapshot.ref.getDownloadURL();
+  }
+
+  Future<void> uploadOwnerProfileData() async {
+    // Create a Firestore document reference and get the document ID
+    DocumentReference docRef = FirebaseFirestore.instance.collection('users_profiles').doc();
+    String documentId = docRef.id; // Get the document ID
+
+    // Upload the selected image to Firebase Storage using the document ID as the filename
+    String profilePictureUrl = '';
+    if (_selectedImage != null) {
+      profilePictureUrl = await uploadImageToFirebase(_selectedImage!, documentId);
+    }
+
+    // Data to upload to Firestore
     Map<String, dynamic> ownerProfileData = {
       'ownerName': nameController.text.trim(),
       'ownerLastName': lastNameController.text.trim(),
       'ownerPhoneNumber': int.tryParse(phoneController.text.trim()) ?? 0,
-      'ownerSecondaryPhoneNumber':
-          int.tryParse(secondaryPhoneController.text.trim()) ?? 0,
+      'ownerSecondaryPhoneNumber': int.tryParse(secondaryPhoneController.text.trim()) ?? 0,
       'ownerGender': selectGender, // 'Hombre' or 'Mujer'
       'ownerBirthDate': Timestamp.fromDate(selectedBirthDate),
       'ownerHomeAdress': homeAddressController.text.trim(),
-      'ownerProfilePicturePath': 'assets/images/circleAvatarPic.png',
+      'ownerProfilePicturePath': profilePictureUrl, // URL of the uploaded image
       'ownerDogs': [], // Empty array for now
     };
 
-    // Upload data to Firestore
+    // Upload the owner profile data to Firestore
     await docRef.set(ownerProfileData);
   }
 
   Future<void> _showConfirmationDialog(BuildContext context) async {
-  return showCupertinoDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return CupertinoAlertDialog(
-        title: const Text('Confirmar'),
-        content: const Text('¿Estás seguro de que deseas crear este perfil?'),
-        actions: [
-          CupertinoDialogAction(
-            isDefaultAction: false,
-            textStyle: const TextStyle(color: Colors.white),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('Cancelar'),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            child: const Text('Crear'),
-            onPressed: () async {
-              Navigator.of(context).pop();
+    return showCupertinoDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CupertinoAlertDialog(
+          title: const Text('Confirmar'),
+          content: const Text('¿Estás seguro de que deseas crear este perfil?'),
+          actions: [
+            CupertinoDialogAction(
+              isDefaultAction: false,
+              textStyle: const TextStyle(color: Colors.white),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancelar'),
+            ),
+            CupertinoDialogAction(
+              isDestructiveAction: true,
+              child: const Text('Crear'),
+              onPressed: () async {
+                Navigator.of(context).pop();
 
-              // Upload profile data
-              await uploadOwnerProfileData();
+                // Upload profile data
+                await uploadOwnerProfileData();
 
-              if (mounted) {
-                // Ensure widget is still mounted before navigating or showing a SnackBar
-                Navigator.of(context).popUntil((route) => route.isFirst);
+                if (mounted) {
+                  // Ensure widget is still mounted before navigating or showing a SnackBar
+                  Navigator.of(context).popUntil((route) => route.isFirst);
 
-                // Ensure widget is still mounted before showing a SnackBar
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Perfil de dueño creado con éxito.')),
-                );
-              }
-            },
-          ),
-        ],
-      );
-    },
-  );
-}
-
+                  // Ensure widget is still mounted before showing a SnackBar
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Perfil de dueño creado con éxito.')),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -129,42 +147,46 @@ class _CreateOwnerProfileScreenState extends State<CreateOwnerProfileScreen> {
         children: [
           SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: TeAppThemeData.appMargin),
+              padding: const EdgeInsets.symmetric(horizontal: TeAppThemeData.appMargin),
               child: Column(
                 children: [
                   const SizedBox(height: TeAppThemeData.appMargin),
                   GestureDetector(
                     onTap: () {
-                      // Add your onTap action here for profile picture selection
+                      pickImage();
                     },
                     child: Container(
-                      height: 200,
+                    height: 200,
                       width: 200,
                       decoration: const BoxDecoration(
                         borderRadius: BorderRadius.all(Radius.circular(200)),
                         color: TeAppColorPalette.darkBlue,
                       ),
-                      child: const Center(
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            FaIcon(
-                              FontAwesomeIcons.solidImage,
-                              size: 100,
-                              color: Colors.white, // Color of the image icon
-                            ),
-                            Positioned(
-                              top: 14,
-                              right: 12,
-                              child: FaIcon(
-                                FontAwesomeIcons.plus,
-                                size: 22,
-                                color: Colors.white, // Color of the plus sign
+                      child: Center(
+                        child: _selectedImage == null
+                            ? const Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  FaIcon(
+                                    FontAwesomeIcons.solidImage,
+                                    size: 100,
+                                    color: Colors.white, // Image icon color
+                                  ),
+                                  Positioned(
+                                    top: 14,
+                                    right: 12,
+                                    child: FaIcon(
+                                      FontAwesomeIcons.plus,
+                                      size: 22,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : CircleAvatar(
+                                backgroundImage: FileImage(_selectedImage!),
+                                radius: 100,
                               ),
-                            ),
-                          ],
-                        ),
                       ),
                     ),
                   ),
@@ -208,34 +230,12 @@ class _CreateOwnerProfileScreenState extends State<CreateOwnerProfileScreen> {
                     },
                   ),
                   const SizedBox(height: TeAppThemeData.generalGap),
-                  GestureDetector(
-                    onTap: () => _selectBirthDate(context),
-                    child: AbsorbPointer(
-                      child: TeContainer(
-                        borderWidth: 4,
-                        elevation: 0,
-                        borderColor: TeAppColorPalette.darkBlue,
-                        color: TeAppColorPalette.white,
-                        content: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 6, horizontal: 4),
-                          child: Text(
-                            selectedBirthDate == DateTime.utc(2024, 05, 07)
-                                ? 'Nacimiento'
-                                : DateFormat('yyyy/MM/dd')
-                                    .format(selectedBirthDate),
-                            
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: TeAppThemeData.generalGap),
                   TeTextField(
                     labelText: 'Dirección de Casa',
                     controller: homeAddressController,
                   ),
                   const SizedBox(height: 100),
+                  const SizedBox(height: TeAppThemeData.generalGap),
                 ],
               ),
             ),
